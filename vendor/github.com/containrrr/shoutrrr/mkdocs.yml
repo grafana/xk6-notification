@@ -1,0 +1,28 @@
+site_name: Shoutrrr
+site_url: https://containrrr.dev/shoutrrr/
+repo_url: https://github.com/containrrr/shoutrrr/
+theme:
+  name: 'material'
+  palette:
+    primary: cyan
+    accent: cyan
+  logo: shoutrrr-180px.png
+  favicon: favicon.ico
+markdown_extensions:
+  - toc:
+      permalink: True
+      separator: '_'
+  - codehilite
+nav:
+  - 'Home': 'index.md'
+  - 'Getting started': 'getting-started.md'
+  - 'Overview': 'services/overview.md'
+  - Services:
+      - Discord: 'services/discord.md'
+      - Hangouts Chat: 'services/hangouts.md'
+      - Pushover: 'services/pushover.md'
+      - Teams: 'services/teams.md'
+      - Zulip Chat: 'services/zulip.md'
+
+plugins:
+  - search

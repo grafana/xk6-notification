@@ -1,0 +1,74 @@
+# github.com/containrrr/shoutrrr v0.0.0-20201115195304-c600010ff37a
+## explicit
+github.com/containrrr/shoutrrr
+github.com/containrrr/shoutrrr/internal/failures
+github.com/containrrr/shoutrrr/pkg/format
+github.com/containrrr/shoutrrr/pkg/router
+github.com/containrrr/shoutrrr/pkg/services/discord
+github.com/containrrr/shoutrrr/pkg/services/gotify
+github.com/containrrr/shoutrrr/pkg/services/hangouts
+github.com/containrrr/shoutrrr/pkg/services/ifttt
+github.com/containrrr/shoutrrr/pkg/services/join
+github.com/containrrr/shoutrrr/pkg/services/logger
+github.com/containrrr/shoutrrr/pkg/services/mattermost
+github.com/containrrr/shoutrrr/pkg/services/pushbullet
+github.com/containrrr/shoutrrr/pkg/services/pushover
+github.com/containrrr/shoutrrr/pkg/services/rocketchat
+github.com/containrrr/shoutrrr/pkg/services/slack
+github.com/containrrr/shoutrrr/pkg/services/smtp
+github.com/containrrr/shoutrrr/pkg/services/standard
+github.com/containrrr/shoutrrr/pkg/services/teams
+github.com/containrrr/shoutrrr/pkg/services/telegram
+github.com/containrrr/shoutrrr/pkg/services/zulip
+github.com/containrrr/shoutrrr/pkg/types
+github.com/containrrr/shoutrrr/pkg/util
+github.com/containrrr/shoutrrr/pkg/xmpp
+# github.com/fatih/color v1.9.0
+github.com/fatih/color
+# github.com/fsnotify/fsnotify v1.4.9
+github.com/fsnotify/fsnotify
+# github.com/loadimpact/k6 v0.29.0
+## explicit
+github.com/loadimpact/k6/js/internal/modules
+github.com/loadimpact/k6/js/modules
+# github.com/mattn/go-colorable v0.1.4
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.11
+github.com/mattn/go-isatty
+# github.com/nxadm/tail v1.4.4
+github.com/nxadm/tail
+github.com/nxadm/tail/ratelimiter
+github.com/nxadm/tail/util
+github.com/nxadm/tail/watch
+github.com/nxadm/tail/winfile
+# github.com/onsi/ginkgo v1.14.0
+github.com/onsi/ginkgo
+github.com/onsi/ginkgo/config
+github.com/onsi/ginkgo/internal/codelocation
+github.com/onsi/ginkgo/internal/containernode
+github.com/onsi/ginkgo/internal/failer
+github.com/onsi/ginkgo/internal/global
+github.com/onsi/ginkgo/internal/leafnodes
+github.com/onsi/ginkgo/internal/remote
+github.com/onsi/ginkgo/internal/spec
+github.com/onsi/ginkgo/internal/spec_iterator
+github.com/onsi/ginkgo/internal/specrunner
+github.com/onsi/ginkgo/internal/suite
+github.com/onsi/ginkgo/internal/testingtproxy
+github.com/onsi/ginkgo/internal/writer
+github.com/onsi/ginkgo/reporters
+github.com/onsi/ginkgo/reporters/stenographer
+github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
+github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
+github.com/onsi/ginkgo/types
+# golang.org/x/sys v0.0.0-20200519105757-fe76b779f299
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
+golang.org/x/xerrors
+golang.org/x/xerrors/internal
+# gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+gopkg.in/tomb.v1
+# gosrc.io/xmpp v0.1.1
+gosrc.io/xmpp
+gosrc.io/xmpp/stanza
