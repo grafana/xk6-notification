@@ -1,4 +1,4 @@
-module github.com/dgzlopes/k6-plugin-notification
+module github.com/dgzlopes/k6-extension-notification
 
 go 1.15
 

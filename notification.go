@@ -9,7 +9,7 @@ func init() {
 	modules.Register("k6/x/notification", new(NOTIFICATION))
 }
 
-// NOTIFICATION is the k6 notification plugin.
+// NOTIFICATION is the k6 notification extension.
 type NOTIFICATION struct{}
 
 // Send a notification using Shoutrr
