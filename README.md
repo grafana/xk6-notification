@@ -4,7 +4,7 @@
 
 ## xk6-notification
 
-This is a [k6](https://github.com/loadimpact/k6) extension using the [xk6](https://github.com/k6io/xk6) system.
+This is a [k6](https://go.k6.io/k6) extension using the [xk6](https://github.com/k6io/xk6) system.
 
 </div>
 
@@ -23,19 +23,15 @@ To build a `k6` binary with this extension, first ensure you have the prerequisi
 
 Then:
 
-1. Clone `xk6`:
-
-```shell
-git clone https://github.com/k6io/xk6.git
-cd xk6
-```
+1. Install `xk6`:
+  ```shell
+  $ go install github.com/k6io/xk6/cmd/xk6@latest
+  ```
 
 2. Build the binary:
-
-```shell
-CGO_ENABLED=1 go run ./cmd/xk6/main.go build master \
-  --with github.com/dgzlopes/xk6-notification
-```
+  ```shell
+  $ xk6 build --with github.com/dgzlopes/xk6-notification
+  ```
 
 ## Usage
 
