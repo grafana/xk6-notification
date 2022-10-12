@@ -1,8 +1,8 @@
 module github.com/dgzlopes/xk6-notification
 
-go 1.15
+go 1.16
 
 require (
-	github.com/containrrr/shoutrrr v0.0.0-20201115195304-c600010ff37a
-	go.k6.io/k6 v0.32.0
+	github.com/containrrr/shoutrrr v0.6.1
+	go.k6.io/k6 v0.40.0
 )
