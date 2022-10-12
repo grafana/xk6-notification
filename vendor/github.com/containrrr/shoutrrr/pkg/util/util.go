@@ -3,8 +3,6 @@ package util
 import (
 	"io/ioutil"
 	"log"
-
-	"github.com/onsi/ginkgo"
 )
 
 // Min returns the smallest of a and b
@@ -21,11 +19,6 @@ func Max(a int, b int) int {
 		return a
 	}
 	return b
-}
-
-// TestLogger returns a log.Logger that writes to ginkgo.GinkgoWriter for use in tests
-func TestLogger() *log.Logger {
-	return log.New(ginkgo.GinkgoWriter, "Test", log.LstdFlags)
 }
 
 // DiscardLogger is a logger that discards any output written to it

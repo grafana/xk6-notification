@@ -1,12 +1,8 @@
 package telegram
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
-	"net/http"
+	"github.com/containrrr/shoutrrr/pkg/format"
 	"net/url"
 
 	"github.com/containrrr/shoutrrr/pkg/services/standard"
@@ -14,7 +10,7 @@ import (
 )
 
 const (
-	apiBase   = "https://api.telegram.org/bot"
+	apiFormat = "https://api.telegram.org/bot%s/%s"
 	maxlength = 4096
 )
 
@@ -22,31 +18,41 @@ const (
 type Service struct {
 	standard.Standard
 	config *Config
+	pkr    format.PropKeyResolver
 }
 
 // Send notification to Telegram
-func (service *Service) Send(message string, _ *types.Params) error {
+func (service *Service) Send(message string, params *types.Params) error {
 	if len(message) > maxlength {
-		return errors.New("message exceeds the max length")
+		return errors.New("Message exceeds the max length")
 	}
 
-	return service.sendMessageForChatIDs(message)
+	config := *service.config
+	if err := service.pkr.UpdateConfigFromParams(&config, params); err != nil {
+		return err
+	}
+
+	return service.sendMessageForChatIDs(message, &config)
 }
 
 // Initialize loads ServiceConfig from configURL and sets logger for this Service
-func (service *Service) Initialize(configURL *url.URL, logger *log.Logger) error {
+func (service *Service) Initialize(configURL *url.URL, logger types.StdLogger) error {
 	service.Logger.SetLogger(logger)
-	service.config = &Config{}
-	if err := service.config.SetURL(configURL); err != nil {
+	service.config = &Config{
+		Preview:      true,
+		Notification: true,
+	}
+	service.pkr = format.NewPropKeyResolver(service.config)
+	if err := service.config.setURL(&service.pkr, configURL); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (service *Service) sendMessageForChatIDs(message string) error {
-	for _, channel := range service.config.Channels {
-		if err := sendMessageToAPI(message, channel, service.config.Token); err != nil {
+func (service *Service) sendMessageForChatIDs(message string, config *Config) error {
+	for _, chat := range service.config.Chats {
+		if err := sendMessageToAPI(message, chat, config); err != nil {
 			return err
 		}
 	}
@@ -58,20 +64,9 @@ func (service *Service) GetConfig() *Config {
 	return service.config
 }
 
-func sendMessageToAPI(message string, channel string, apiToken string) error {
-	postURL := fmt.Sprintf("%s%s/sendMessage", apiBase, apiToken)
-	jsonData, err := json.Marshal(
-		JSON{
-			Text: message,
-			ID:   channel,
-		})
-	if err != nil {
-		return err
-	}
-
-	res, err := http.Post(postURL, "application/jsonData", bytes.NewBuffer(jsonData))
-	if err == nil && res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to send notification to \"%s\", response status code %s", channel, res.Status)
-	}
+func sendMessageToAPI(message string, chat string, config *Config) error {
+	client := &Client{token: config.Token}
+	payload := createSendMessagePayload(message, chat, config)
+	_, err := client.SendMessage(&payload)
 	return err
 }

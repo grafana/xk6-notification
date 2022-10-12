@@ -2,52 +2,44 @@ package router
 
 import (
 	"fmt"
-	"github.com/containrrr/shoutrrr/pkg/services/rocketchat"
-	"log"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
-	"github.com/containrrr/shoutrrr/pkg/services/discord"
-	"github.com/containrrr/shoutrrr/pkg/services/gotify"
-	"github.com/containrrr/shoutrrr/pkg/services/hangouts"
-	"github.com/containrrr/shoutrrr/pkg/services/ifttt"
-	"github.com/containrrr/shoutrrr/pkg/services/join"
-	"github.com/containrrr/shoutrrr/pkg/services/logger"
-	"github.com/containrrr/shoutrrr/pkg/services/mattermost"
-	"github.com/containrrr/shoutrrr/pkg/services/pushbullet"
-	"github.com/containrrr/shoutrrr/pkg/services/pushover"
-	"github.com/containrrr/shoutrrr/pkg/services/slack"
-	"github.com/containrrr/shoutrrr/pkg/services/smtp"
-	"github.com/containrrr/shoutrrr/pkg/services/teams"
-	"github.com/containrrr/shoutrrr/pkg/services/telegram"
-	"github.com/containrrr/shoutrrr/pkg/services/zulip"
 	t "github.com/containrrr/shoutrrr/pkg/types"
-	"github.com/containrrr/shoutrrr/pkg/xmpp"
 )
 
 // ServiceRouter is responsible for routing a message to a specific notification service using the notification URL
 type ServiceRouter struct {
-	logger   *log.Logger
+	logger   t.StdLogger
 	services []t.Service
 	queue    []string
 	Timeout  time.Duration
 }
 
 // New creates a new service router using the specified logger and service URLs
-func New(logger *log.Logger, serviceURLs ...string) (*ServiceRouter, error) {
+func New(logger t.StdLogger, serviceURLs ...string) (*ServiceRouter, error) {
 	router := ServiceRouter{
 		logger:  logger,
 		Timeout: 10 * time.Second,
 	}
+
 	for _, serviceURL := range serviceURLs {
-		service, err := router.initService(serviceURL)
-		if err != nil {
+		if err := router.AddService(serviceURL); err != nil {
 			return nil, fmt.Errorf("error initializing router services: %s", err)
 		}
-		router.services = append(router.services, service)
 	}
 	return &router, nil
+}
+
+// AddService initializes the specified service from its URL, and adds it if no errors occur
+func (router *ServiceRouter) AddService(serviceURL string) error {
+	service, err := router.initService(serviceURL)
+	if err == nil {
+		router.services = append(router.services, service)
+	}
+	return err
 }
 
 // Send sends the specified message using the routers underlying services
@@ -58,28 +50,67 @@ func (router *ServiceRouter) Send(message string, params *t.Params) []error {
 
 	serviceCount := len(router.services)
 	errors := make([]error, serviceCount)
-	results := make(chan error, serviceCount)
+	results := router.SendAsync(message, params)
+
+	for i := range router.services {
+		errors[i] = <-results
+	}
+
+	return errors
+}
+
+// SendItems sends the specified message items using the routers underlying services
+func (router *ServiceRouter) SendItems(items []t.MessageItem, params t.Params) []error {
+	if router == nil {
+		return []error{fmt.Errorf("error sending message: no senders")}
+	}
+
+	// Fallback using old API for now
+	message := strings.Builder{}
+	for _, item := range items {
+		message.WriteString(item.Text)
+	}
+
+	serviceCount := len(router.services)
+	errors := make([]error, serviceCount)
+	results := router.SendAsync(message.String(), &params)
+
+	for i := range router.services {
+		errors[i] = <-results
+	}
+
+	return errors
+}
+
+// SendAsync sends the specified message using the routers underlying services
+func (router *ServiceRouter) SendAsync(message string, params *t.Params) chan error {
+	serviceCount := len(router.services)
+	proxy := make(chan error, serviceCount)
+	errors := make(chan error, serviceCount)
 
 	if params == nil {
 		params = &t.Params{}
 	}
 	for _, service := range router.services {
-		go sendToService(service, results, router.Timeout, message, *params)
+		go sendToService(service, proxy, router.Timeout, message, *params)
 	}
-	for i := range router.services {
-		select {
-		case res := <-results:
-			errors[i] = res
-		case <-time.After(10 * time.Second):
-			fmt.Println("timeout 1")
+
+	go func() {
+		for i := 0; i < serviceCount; i++ {
+			errors <- <-proxy
 		}
-	}
+		close(errors)
+	}()
+
 	return errors
 }
 
 func sendToService(service t.Service, results chan error, timeout time.Duration, message string, params t.Params) {
-	// TODO: There really ought to be a way to tell what service generated the error
-	result := make(chan error, 1)
+	result := make(chan error)
+
+	// TODO: There really ought to be a better way to name the services
+	pkg := reflect.TypeOf(service).Elem().PkgPath()
+	serviceName := pkg[strings.LastIndex(pkg, "/")+1:]
 
 	go func() { result <- service.Send(message, &params) }()
 
@@ -87,9 +118,8 @@ func sendToService(service t.Service, results chan error, timeout time.Duration,
 	case res := <-result:
 		results <- res
 	case <-time.After(timeout):
-		results <- fmt.Errorf("timed out")
+		results <- fmt.Errorf("failed to send using %v: timed out", serviceName)
 	}
-	close(result)
 }
 
 // Enqueue adds the message to an internal queue and sends it when Flush is invoked
@@ -108,8 +138,11 @@ func (router *ServiceRouter) Flush(params *t.Params) {
 }
 
 // SetLogger sets the logger that the services will use to write progress logs
-func (router *ServiceRouter) SetLogger(logger *log.Logger) {
+func (router *ServiceRouter) SetLogger(logger t.StdLogger) {
 	router.logger = logger
+	for _, service := range router.services {
+		service.SetLogger(logger)
+	}
 }
 
 // ExtractServiceName from a notification URL
@@ -119,7 +152,14 @@ func (router *ServiceRouter) ExtractServiceName(rawURL string) (string, *url.URL
 		return "", &url.URL{}, err
 	}
 
-	return serviceURL.Scheme, serviceURL, nil
+	scheme := serviceURL.Scheme
+	schemeParts := strings.Split(scheme, "+")
+
+	if len(schemeParts) > 1 {
+		scheme = schemeParts[0]
+	}
+
+	return scheme, serviceURL, nil
 }
 
 // Route a message to a specific notification service using the notification URL
@@ -133,25 +173,6 @@ func (router *ServiceRouter) Route(rawURL string, message string) error {
 	return service.Send(message, nil)
 }
 
-var serviceMap = map[string]func() t.Service{
-	"discord":    func() t.Service { return &discord.Service{} },
-	"pushover":   func() t.Service { return &pushover.Service{} },
-	"slack":      func() t.Service { return &slack.Service{} },
-	"teams":      func() t.Service { return &teams.Service{} },
-	"telegram":   func() t.Service { return &telegram.Service{} },
-	"smtp":       func() t.Service { return &smtp.Service{} },
-	"ifttt":      func() t.Service { return &ifttt.Service{} },
-	"gotify":     func() t.Service { return &gotify.Service{} },
-	"logger":     func() t.Service { return &logger.Service{} },
-	"xmpp":       func() t.Service { return &xmpp.Service{} },
-	"pushbullet": func() t.Service { return &pushbullet.Service{} },
-	"mattermost": func() t.Service { return &mattermost.Service{} },
-	"hangouts":   func() t.Service { return &hangouts.Service{} },
-	"zulip":      func() t.Service { return &zulip.Service{} },
-	"join":       func() t.Service { return &join.Service{} },
-	"rocketchat": func() t.Service { return &rocketchat.Service{} },
-}
-
 func (router *ServiceRouter) initService(rawURL string) (t.Service, error) {
 
 	scheme, configURL, err := router.ExtractServiceName(rawURL)
@@ -159,12 +180,23 @@ func (router *ServiceRouter) initService(rawURL string) (t.Service, error) {
 		return nil, err
 	}
 
-	serviceFactory, valid := serviceMap[strings.ToLower(scheme)]
-	if !valid {
-		return nil, fmt.Errorf("unknown service scheme for URL '%s'", rawURL)
+	service, err := newService(scheme)
+	if err != nil {
+		return nil, err
 	}
 
-	service := serviceFactory()
+	if configURL.Scheme != scheme {
+		router.log("Got custom URL:", configURL.String())
+		customURLService, ok := service.(t.CustomURLService)
+		if !ok {
+			return nil, fmt.Errorf("custom URLs are not supported by '%s' service", scheme)
+		}
+		configURL, err = customURLService.GetConfigURLFromCustom(configURL)
+		if err != nil {
+			return nil, err
+		}
+		router.log("Converted service URL:", configURL.String())
+	}
 
 	err = service.Initialize(configURL, router.logger)
 	if err != nil {
@@ -175,10 +207,15 @@ func (router *ServiceRouter) initService(rawURL string) (t.Service, error) {
 }
 
 // NewService returns a new uninitialized service instance
-func (router *ServiceRouter) NewService(service string) (t.Service, error) {
-	serviceFactory, valid := serviceMap[strings.ToLower(service)]
+func (*ServiceRouter) NewService(serviceScheme string) (t.Service, error) {
+	return newService(serviceScheme)
+}
+
+// newService returns a new uninitialized service instance
+func newService(serviceScheme string) (t.Service, error) {
+	serviceFactory, valid := serviceMap[strings.ToLower(serviceScheme)]
 	if !valid {
-		return nil, fmt.Errorf("unknown service %q", service)
+		return nil, fmt.Errorf("unknown service %q", serviceScheme)
 	}
 	return serviceFactory(), nil
 }
@@ -200,4 +237,11 @@ func (router *ServiceRouter) ListServices() []string {
 func (router *ServiceRouter) Locate(rawURL string) (t.Service, error) {
 	service, err := router.initService(rawURL)
 	return service, err
+}
+
+func (router *ServiceRouter) log(v ...interface{}) {
+	if router.logger == nil {
+		return
+	}
+	router.logger.Println(v...)
 }

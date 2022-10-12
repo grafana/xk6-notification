@@ -83,6 +83,61 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "sentriz",
+      "name": "Senan Kelly",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/6832539?v=4",
+      "profile": "https://senan.xyz",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "JonasPf",
+      "name": "JonasPf",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2216775?v=4",
+      "profile": "https://github.com/JonasPf",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "claycooper",
+      "name": "claycooper",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3612906?v=4",
+      "profile": "https://github.com/claycooper",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "darktohka",
+      "name": "Derzsi Dániel",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16326697?v=4",
+      "profile": "http://ko-fi.com/disyer",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "JosephKav",
+      "name": "Joseph Kavanagh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4267227?v=4",
+      "profile": "https://josephkav.io",
+      "contributions": [
+        "code",
+        "bug"
+      ]
+    },
+    {
+      "login": "justinsteven",
+      "name": "Justin Steven",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1893909?v=4",
+      "profile": "https://ring0.lol",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

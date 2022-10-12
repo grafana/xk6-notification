@@ -2,13 +2,10 @@ package ifttt
 
 import (
 	"errors"
-	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/containrrr/shoutrrr/pkg/format"
 	"github.com/containrrr/shoutrrr/pkg/services/standard"
+	"github.com/containrrr/shoutrrr/pkg/types"
+	"net/url"
 )
 
 const (
@@ -19,35 +16,60 @@ const (
 // Config is the configuration needed to send IFTTT notifications
 type Config struct {
 	standard.EnumlessConfig
-	WebHookID         string
-	Events            []string
-	Value1            string
-	Value2            string
-	Value3            string
-	UseMessageAsValue uint8 `desc:"" default:"2"`
+	WebHookID         string   `url:"host" required:"true"`
+	Events            []string `key:"events" required:"true"`
+	Value1            string   `key:"value1" optional:""`
+	Value2            string   `key:"value2" optional:""`
+	Value3            string   `key:"value3" optional:""`
+	UseMessageAsValue uint8    `key:"messagevalue" desc:"Sets the corresponding value field to the notification message" default:"2"`
+	UseTitleAsValue   uint8    `key:"titlevalue" desc:"Sets the corresponding value field to the notification title" default:"0"`
+	Title             string   `key:"title" default:"" desc:"Notification title, optionally set by the sender"`
 }
 
 // GetURL returns a URL representation of it's current field values
 func (config *Config) GetURL() *url.URL {
+	resolver := format.NewPropKeyResolver(config)
+	return config.getURL(&resolver)
+}
+
+// SetURL updates a ServiceConfig from a URL representation of it's field values
+func (config *Config) SetURL(url *url.URL) error {
+	resolver := format.NewPropKeyResolver(config)
+	return config.setURL(&resolver, url)
+}
+
+func (config *Config) getURL(resolver types.ConfigQueryResolver) *url.URL {
 
 	return &url.URL{
 		Host:     config.WebHookID,
 		Path:     "/",
 		Scheme:   Scheme,
-		RawQuery: format.BuildQuery(config),
+		RawQuery: format.BuildQuery(resolver),
 	}
-
 }
 
-// SetURL updates a ServiceConfig from a URL representation of it's field values
-func (config *Config) SetURL(url *url.URL) error {
-
+func (config *Config) setURL(resolver types.ConfigQueryResolver, url *url.URL) error {
+	if config.UseMessageAsValue == 0 {
+		config.UseMessageAsValue = 2
+	}
 	config.WebHookID = url.Hostname()
 
 	for key, vals := range url.Query() {
-		if err := config.Set(key, vals[0]); err != nil {
+		if err := resolver.Set(key, vals[0]); err != nil {
 			return err
 		}
+	}
+
+	if config.UseMessageAsValue > 3 || config.UseMessageAsValue < 1 {
+		return errors.New("invalid value for messagevalue: only values 1-3 are supported")
+	}
+
+	if config.UseTitleAsValue > 3 {
+		return errors.New("invalid value for titlevalue: only values 1-3 or 0 (for disabling) are supported")
+	}
+
+	if config.UseTitleAsValue == config.UseMessageAsValue {
+		return errors.New("titlevalue cannot use the same number as messagevalue")
 	}
 
 	if len(config.Events) < 1 {
@@ -58,59 +80,5 @@ func (config *Config) SetURL(url *url.URL) error {
 		return errors.New("webhook ID missing from config URL")
 	}
 
-	return nil
-}
-
-// QueryFields returns the fields that are part of the Query of the service URL
-func (config *Config) QueryFields() []string {
-	return []string{
-		"events",
-		"value1",
-		"value2",
-		"value3",
-		"messagevalue",
-	}
-}
-
-// Get returns the value of a Query field
-func (config *Config) Get(key string) (string, error) {
-	switch key {
-	case "events":
-		return strings.Join(config.Events, ","), nil
-	case "value1":
-		return config.Value1, nil
-	case "value2":
-		return config.Value2, nil
-	case "value3":
-		return config.Value3, nil
-	case "messagevalue":
-		return fmt.Sprintf("%d", config.UseMessageAsValue), nil
-	}
-	return "", fmt.Errorf("invalid query key \"%s\"", key)
-}
-
-// Set updates the value of a Query field
-func (config *Config) Set(key string, value string) error {
-	switch key {
-	case "events":
-		config.Events = strings.Split(value, ",")
-	case "value1":
-		config.Value1 = value
-	case "value2":
-		config.Value2 = value
-	case "value3":
-		config.Value3 = value
-	case "messagevalue":
-		val64, err := strconv.ParseUint(value, 10, 8)
-		if err == nil && val64 > 3 {
-			err = errors.New("only values 1-3 are supported")
-		}
-		if err != nil {
-			return fmt.Errorf("invalid value \"%s\" for \"messagevalue\": %s", value, err)
-		}
-		config.UseMessageAsValue = uint8(val64)
-	default:
-		return fmt.Errorf("invalid query key \"%s\"", key)
-	}
 	return nil
 }

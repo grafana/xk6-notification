@@ -2,7 +2,7 @@ package join
 
 import (
 	"fmt"
-	"log"
+	"github.com/containrrr/shoutrrr/pkg/format"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +20,7 @@ const (
 type Service struct {
 	standard.Standard
 	config *Config
+	pkr    format.PropKeyResolver
 }
 
 // Send a notification message to Pushover
@@ -84,10 +85,11 @@ func (service *Service) sendToDevices(devices string, message string, title stri
 }
 
 // Initialize loads ServiceConfig from configURL and sets logger for this Service
-func (service *Service) Initialize(configURL *url.URL, logger *log.Logger) error {
+func (service *Service) Initialize(configURL *url.URL, logger types.StdLogger) error {
 	service.Logger.SetLogger(logger)
 	service.config = &Config{}
-	if err := service.config.SetURL(configURL); err != nil {
+	service.pkr = format.NewPropKeyResolver(service.config)
+	if err := service.config.setURL(&service.pkr, configURL); err != nil {
 		return err
 	}
 
