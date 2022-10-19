@@ -2,7 +2,6 @@ package zulip
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -55,11 +54,11 @@ func (service *Service) Send(message string, params *types.Params) error {
 }
 
 // Initialize loads ServiceConfig from configURL and sets logger for this Service
-func (service *Service) Initialize(configURL *url.URL, logger *log.Logger) error {
+func (service *Service) Initialize(configURL *url.URL, logger types.StdLogger) error {
 	service.Logger.SetLogger(logger)
 	service.config = &Config{}
 
-	if err := service.config.SetURL(configURL); err != nil {
+	if err := service.config.setURL(nil, configURL); err != nil {
 		return err
 	}
 
@@ -67,24 +66,26 @@ func (service *Service) Initialize(configURL *url.URL, logger *log.Logger) error
 }
 
 func (service *Service) doSend(config *Config, message string) error {
-	apiURL := service.getURL(config)
+	apiURL := service.getAPIURL(config)
 	payload := CreatePayload(config, message)
 	res, err := http.Post(apiURL, "application/x-www-form-urlencoded", strings.NewReader(payload.Encode()))
 
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to send notification to service, response status code %s", res.Status)
+	if err == nil && res.StatusCode != http.StatusOK {
+		err = fmt.Errorf("response status code %s", res.Status)
 	}
 
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to send zulip message: %s", err)
+	}
+
+	return nil
 }
 
-func (service *Service) getURL(config *Config) string {
-	url := url.URL{
+func (service *Service) getAPIURL(config *Config) string {
+	return (&url.URL{
 		User:   url.UserPassword(config.BotMail, config.BotKey),
 		Host:   config.Host,
-		Path:   config.Path,
+		Path:   "api/v1/messages",
 		Scheme: "https",
-	}
-
-	return url.String()
+	}).String()
 }

@@ -3,6 +3,7 @@ package rocketchat
 import (
 	"errors"
 	"fmt"
+	"github.com/containrrr/shoutrrr/pkg/types"
 	"net/url"
 	"strings"
 
@@ -11,24 +12,25 @@ import (
 
 // Config for the rocket.chat service
 type Config struct {
-	standard.QuerylessConfig
 	standard.EnumlessConfig
-	UserName string
-	Host     string
-	Port     string
-	TokenA   string
-	Channel  string
-	TokenB   string
+	UserName string `url:"user" optional:""`
+	Host     string `url:"host"`
+	Port     string `url:"port"`
+	TokenA   string `url:"path1"`
+	Channel  string `url:"path3"`
+	TokenB   string `url:"path2"`
 }
 
 // GetURL returns a URL representation of it's current field values
 func (config *Config) GetURL() *url.URL {
-	return &url.URL{
-		Host:       config.Host,
-		Path:       fmt.Sprintf("hooks/%s/%s", config.TokenA, config.TokenB),
+
+	u := &url.URL{
+		Host:       fmt.Sprintf("%s:%v", config.Host, config.Port),
+		Path:       fmt.Sprintf("%s/%s", config.TokenA, config.TokenB),
 		Scheme:     Scheme,
 		ForceQuery: false,
 	}
+	return u
 }
 
 // SetURL updates a ServiceConfig from a URL representation of it's field values
@@ -50,7 +52,7 @@ func (config *Config) SetURL(serviceURL *url.URL) error {
 	config.TokenB = path[2]
 	if len(path) > 3 {
 		if serviceURL.Fragment != "" {
-			config.Channel = "#" + strings.TrimPrefix(serviceURL.Fragment, "#")
+			config.Channel = "#" + serviceURL.Fragment
 		} else if !strings.HasPrefix(path[3], "@") {
 			config.Channel = "#" + path[3]
 		} else {
@@ -68,7 +70,7 @@ const (
 )
 
 // CreateConfigFromURL to use within the rocket.chat service
-func CreateConfigFromURL(serviceURL *url.URL) (*Config, error) {
+func CreateConfigFromURL(_ types.ConfigQueryResolver, serviceURL *url.URL) (*Config, error) {
 	config := Config{}
 	err := config.SetURL(serviceURL)
 	return &config, err

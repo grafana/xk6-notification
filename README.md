@@ -39,7 +39,7 @@ Then:
 import http from 'k6/http';
 import notification from 'k6/x/notification';
 
-const url = 'slack://token-a/token-b/token-c';
+const url = 'slack://token:token@channel/';
 
 export function setup() {
   notification.send(url, 'Starting test');
@@ -53,6 +53,8 @@ export function teardown(data) {
   notification.send(url, 'Finishing test');
 }
 ```
+
+Token example ([more information](https://containrrr.dev/shoutrrr/latest/guides/slack/)): `slack://xoxb:123456789012-1234567890123-4mt0t4l1YL3g1T5L4cK70k3N@C001CH4NN3L`
 
 ## Documentation
 
