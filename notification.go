@@ -1,3 +1,4 @@
+// Package notification enables messages to be sent to a Slack workspace via webhook
 package notification
 
 import (
