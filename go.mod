@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/containrrr/shoutrrr v0.6.1
-	go.k6.io/k6 v0.45.0
+	go.k6.io/k6 v0.45.1
 )
 
 require (
