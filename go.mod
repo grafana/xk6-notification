@@ -1,4 +1,4 @@
-module github.com/dgzlopes/xk6-notification
+module github.com/grafana/xk6-notification
 
 go 1.19
 
